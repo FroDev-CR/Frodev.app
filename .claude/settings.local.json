@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat ui-ux-pro-max-skill/.claude-plugin/plugin.json)",
+      "Bash(cat caveman/.claude-plugin/plugin.json)",
+      "Bash(ls caveman/skills)",
+      "Bash(mkdir -p 'C:\\\\Users\\\\frodi/.claude/skills')",
+      "Bash(cp -r 'C:\\\\Users\\\\frodi/AppData/Local/Temp/claude/C--Users-frodi-Downloads-Frodev-app/aacf0367-a45d-4deb-b362-43946ee9c040/scratchpad/ui-ux-pro-max-skill/.claude/skills/*' 'C:\\\\Users\\\\frodi/.claude/skills/')",
+      "Bash(cp -r 'C:\\\\Users\\\\frodi/AppData/Local/Temp/claude/C--Users-frodi-Downloads-Frodev-app/aacf0367-a45d-4deb-b362-43946ee9c040/scratchpad/caveman/skills/*' 'C:\\\\Users\\\\frodi/.claude/skills/')",
+      "Read(//c/Users/frodi/.claude/**)",
+      "PowerShell(python \"C:\\\\Users\\\\frodi\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"brutalist personal finance gym tracker mobile app dark bold\" --design-system --variance 9 --density 6 -p \"Frodev.app\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\frodi\\\\Downloads\\\\Frodev.app\\\\frodev-app\" -Force | ForEach-Object { Move-Item $_.FullName \"C:\\\\Users\\\\frodi\\\\Downloads\\\\Frodev.app\\\\\" -Force }; Remove-Item \"C:\\\\Users\\\\frodi\\\\Downloads\\\\Frodev.app\\\\frodev-app\" -Recurse -Force -Confirm:$false; Get-ChildItem \"C:\\\\Users\\\\frodi\\\\Downloads\\\\Frodev.app\" -Force | Select-Object Name)",
+      "PowerShell(npm install @supabase/supabase-js lucide-react)",
+      "PowerShell(npm run build)",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://ozqzwcsqmzhwxqwyxtbn.supabase.co/rest/v1/transactions?select=id&limit=1\" -Headers @{ apikey = \"sb_publishable_Nf_6brbsmGrM4VOSogT15Q_al0y5SiE\" } -UseBasicParsing; $r.StatusCode; $r.Content)",
+      "PowerShell(git branch -m main)",
+      "PowerShell(git remote add origin https://github.com/FroDev-CR/Frodev.app.git)",
+      "PowerShell(git add -A)"
+    ]
+  }
+}

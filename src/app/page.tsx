@@ -1,65 +1,133 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { TrendingUp, TrendingDown, Dumbbell, ArrowRight } from "lucide-react";
+import { getTransactions, getWorkouts } from "@/lib/store";
+import { money, shortDate } from "@/lib/format";
+import type { Transaction, Workout } from "@/lib/types";
 
 export default function Home() {
+  const [txs, setTxs] = useState<Transaction[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    Promise.all([getTransactions(), getWorkouts()]).then(([t, w]) => {
+      setTxs(t);
+      setWorkouts(w);
+      setLoaded(true);
+    });
+  }, []);
+
+  const month = new Date().toISOString().slice(0, 7);
+  const monthTxs = txs.filter((t) => t.date.startsWith(month));
+  const income = monthTxs
+    .filter((t) => t.type === "entrada")
+    .reduce((s, t) => s + t.amount, 0);
+  const expense = monthTxs
+    .filter((t) => t.type === "gasto")
+    .reduce((s, t) => s + t.amount, 0);
+  const balance = income - expense;
+
+  const monthWorkouts = workouts.filter((w) => w.date.startsWith(month));
+  const lastWorkout = workouts[0];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex flex-col gap-6">
+      <header className="rot-l">
+        <h1 className="text-3xl font-bold uppercase tracking-tight">
+          Frodev<span className="text-primary">.app</span>
+        </h1>
+        <p className="text-muted text-sm mt-1">Tu vida, bajo control.</p>
+      </header>
+
+      {/* Balance del mes */}
+      <section className="brut-card p-5">
+        <span className="brut-tag bg-primary text-white">Balance del mes</span>
+        <p
+          className={`text-4xl font-bold mt-3 tabular-nums ${
+            balance >= 0 ? "text-income" : "text-expense"
+          }`}
+        >
+          {loaded ? money(balance) : "—"}
+        </p>
+        <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="text-income" aria-hidden />
+            <span className="tabular-nums">{money(income)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <TrendingDown size={18} className="text-expense" aria-hidden />
+            <span className="tabular-nums">{money(expense)}</span>
+          </div>
+        </div>
+        <Link
+          href="/finanzas"
+          className="brut-btn bg-primary text-white flex items-center justify-center gap-2 mt-5 px-4"
+        >
+          Ir a finanzas <ArrowRight size={18} aria-hidden />
+        </Link>
+      </section>
+
+      {/* Gym del mes */}
+      <section className="brut-card brut-card--gym p-5 rot-r">
+        <span className="brut-tag bg-gym text-black">Gym</span>
+        <p className="text-4xl font-bold mt-3">
+          {monthWorkouts.length}
+          <span className="text-base text-muted font-normal">
+            {" "}
+            días este mes
+          </span>
+        </p>
+        {lastWorkout && (
+          <p className="text-sm text-muted mt-2">
+            Último: {shortDate(lastWorkout.date)} — {lastWorkout.focus} (
+            {lastWorkout.exercises.length} ejercicios)
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        )}
+        <Link
+          href="/gym"
+          className="brut-btn bg-gym text-black flex items-center justify-center gap-2 mt-5 px-4"
+        >
+          <Dumbbell size={18} aria-hidden /> Ir al gym
+        </Link>
+      </section>
+
+      {/* Últimos movimientos */}
+      <section>
+        <h2 className="text-lg font-bold uppercase mb-3">Últimos movimientos</h2>
+        {loaded && txs.length === 0 && (
+          <p className="text-muted text-sm">
+            Sin movimientos aún. Registra tu primer gasto o entrada.
+          </p>
+        )}
+        <ul className="flex flex-col gap-3">
+          {txs.slice(0, 5).map((t) => (
+            <li
+              key={t.id}
+              className={`brut-card p-3 flex justify-between items-center ${
+                t.type === "entrada"
+                  ? "brut-card--income"
+                  : "brut-card--expense"
+              }`}
+            >
+              <div>
+                <p className="font-bold text-sm">{t.category}</p>
+                <p className="text-xs text-muted">{shortDate(t.date)}</p>
+              </div>
+              <p
+                className={`font-bold tabular-nums ${
+                  t.type === "entrada" ? "text-income" : "text-expense"
+                }`}
+              >
+                {t.type === "entrada" ? "+" : "−"}
+                {money(t.amount)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
