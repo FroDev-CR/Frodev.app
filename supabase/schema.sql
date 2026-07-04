@@ -1,5 +1,6 @@
 -- Frodev.app — esquema Supabase
 -- Ejecutar en SQL Editor del dashboard de Supabase.
+-- Es idempotente: se puede correr completo las veces que haga falta.
 
 create table if not exists transactions (
   id uuid primary key default gen_random_uuid(),
@@ -44,14 +45,18 @@ alter table workouts enable row level security;
 alter table debts enable row level security;
 alter table categories enable row level security;
 
+drop policy if exists "anon full access transactions" on transactions;
 create policy "anon full access transactions" on transactions
   for all using (true) with check (true);
 
+drop policy if exists "anon full access workouts" on workouts;
 create policy "anon full access workouts" on workouts
   for all using (true) with check (true);
 
+drop policy if exists "anon full access debts" on debts;
 create policy "anon full access debts" on debts
   for all using (true) with check (true);
 
+drop policy if exists "anon full access categories" on categories;
 create policy "anon full access categories" on categories
   for all using (true) with check (true);
