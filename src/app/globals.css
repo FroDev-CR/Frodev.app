@@ -10,6 +10,7 @@
   --accent: #059669;
   --income: #10b981;
   --expense: #f43f5e;
+  --debt: #dc2626;
   --gym: #facc15;
   --border: #ffffff;
   --shadow-hard: 4px 4px 0 0;
@@ -24,6 +25,7 @@
   --color-primary: var(--primary);
   --color-income: var(--income);
   --color-expense: var(--expense);
+  --color-debt: var(--debt);
   --color-gym: var(--gym);
   --font-mono: var(--font-space-mono), monospace;
 }
@@ -55,6 +57,10 @@ body {
 
 .brut-card--expense {
   box-shadow: var(--shadow-hard) var(--expense);
+}
+
+.brut-card--debt {
+  box-shadow: var(--shadow-hard) var(--debt);
 }
 
 .brut-card--gym {

@@ -25,15 +25,29 @@ export interface Workout {
   created_at: string;
 }
 
-export const EXPENSE_CATEGORIES = [
-  "Comida",
-  "Transporte",
-  "Casa",
-  "Salud",
-  "Ocio",
-  "Suscripciones",
-  "Otro",
-] as const;
+export type DebtFrequency = "quincenal" | "mensual" | "unico";
+
+export interface Debt {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: DebtFrequency;
+  created_at: string;
+}
+
+export const DEBT_FREQUENCY_LABELS: Record<DebtFrequency, string> = {
+  quincenal: "Quincenal",
+  mensual: "Mensual",
+  unico: "Pago único",
+};
+
+// Categorías de gastos: las crea el usuario desde el formulario.
+export interface Category {
+  id: string;
+  name: string;
+  type: TransactionType;
+  created_at: string;
+}
 
 export const INCOME_CATEGORIES = [
   "Salario",
