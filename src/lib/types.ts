@@ -51,6 +51,7 @@ export interface Debt {
   name: string;
   amount: number;
   frequency: DebtFrequency;
+  due_date: string | null; // solo para pago único: cuándo hay que pagarlo
   created_at: string;
 }
 

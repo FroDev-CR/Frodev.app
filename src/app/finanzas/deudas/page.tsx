@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Skull, Trash2 } from "lucide-react";
 import { getDebts, addDebt, deleteDebt } from "@/lib/store";
-import { money } from "@/lib/format";
+import { money, shortDate, today } from "@/lib/format";
 import {
   DEBT_FREQUENCY_LABELS,
   type Debt,
@@ -23,6 +23,7 @@ export default function DeudasPage() {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<DebtFrequency>("mensual");
+  const [dueDate, setDueDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -61,6 +62,7 @@ export default function DeudasPage() {
         name: name.trim(),
         amount: value,
         frequency,
+        due_date: frequency === "unico" ? dueDate : null,
       });
       setDebts((prev) => [row, ...prev]);
       setName("");
@@ -181,6 +183,19 @@ export default function DeudasPage() {
             </div>
           </fieldset>
 
+          {frequency === "unico" && (
+            <label className="flex flex-col gap-1 text-sm font-bold uppercase">
+              ¿Cuándo hay que pagarlo?
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="brut-input"
+                required
+              />
+            </label>
+          )}
+
           {error && (
             <p role="alert" className="text-expense text-sm font-bold">
               {error}
@@ -215,6 +230,9 @@ export default function DeudasPage() {
                 <p className="font-bold text-sm truncate">{d.name}</p>
                 <span className="brut-tag bg-debt text-white mt-1">
                   {DEBT_FREQUENCY_LABELS[d.frequency]}
+                  {d.frequency === "unico" && d.due_date
+                    ? ` · ${shortDate(d.due_date)}`
+                    : ""}
                 </span>
               </div>
               <div className="flex items-center gap-3 shrink-0">

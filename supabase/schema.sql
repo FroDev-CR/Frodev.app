@@ -57,6 +57,10 @@ create table if not exists wallet (
 alter table transactions
   add column if not exists recurring_id uuid references recurring_incomes(id) on delete set null;
 
+-- Fecha de pago para deudas de pago único.
+alter table debts
+  add column if not exists due_date date;
+
 create index if not exists idx_transactions_date on transactions (date desc);
 create index if not exists idx_workouts_date on workouts (date desc);
 
