@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  NotebookPen,
   Plus,
   Skull,
   Trash2,
@@ -42,7 +43,7 @@ export default function FinanzasPage() {
   // Pagos únicos ordenados por cercanía (las recurrentes no tienen día fijo).
   const todayStr = today();
   const upcomingDebts = debts
-    .filter((d) => d.frequency === "unico" && d.due_date)
+    .filter((d) => d.frequency === "unico" && d.due_date && !d.low_priority)
     .sort((a, b) => a.due_date!.localeCompare(b.due_date!))
     .slice(0, 3);
 
@@ -97,13 +98,21 @@ export default function FinanzasPage() {
         </Link>
       </div>
 
-      {/* Estadísticas */}
-      <Link
-        href="/finanzas/estadisticas"
-        className="brut-btn bg-primary text-white px-4 flex items-center justify-center gap-2"
-      >
-        <BarChart3 size={20} aria-hidden /> Estadísticas
-      </Link>
+      {/* Estadísticas y lista de compras */}
+      <div className="grid grid-cols-2 gap-4">
+        <Link
+          href="/finanzas/estadisticas"
+          className="brut-btn bg-primary text-white px-3 flex items-center justify-center gap-2 text-sm"
+        >
+          <BarChart3 size={18} aria-hidden /> Stats
+        </Link>
+        <Link
+          href="/finanzas/lista"
+          className="brut-btn bg-gym text-black px-3 flex items-center justify-center gap-2 text-sm"
+        >
+          <NotebookPen size={18} aria-hidden /> Compras
+        </Link>
+      </div>
 
       {/* Deudas cercanas */}
       {upcomingDebts.length > 0 && (

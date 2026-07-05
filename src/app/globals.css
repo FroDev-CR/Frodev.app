@@ -118,6 +118,45 @@ body {
   display: inline-block;
 }
 
+/* ── Cuaderno (lista de compras) ─────────────────────── */
+
+.notebook {
+  background: #f7f2e2;
+  color: #1f2937;
+  border: 3px solid var(--border);
+  box-shadow: var(--shadow-hard) var(--primary);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Margen rojo de cuaderno */
+.notebook::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 38px;
+  width: 2px;
+  background: rgba(220, 38, 38, 0.4);
+  pointer-events: none;
+}
+
+/* Renglón */
+.notebook-line {
+  border-bottom: 2px solid rgba(59, 92, 153, 0.22);
+  min-height: 44px;
+  padding-left: 52px;
+  padding-right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.font-hand {
+  font-family: var(--font-caveat), cursive;
+}
+
 .rot-l {
   transform: rotate(-1.5deg);
 }

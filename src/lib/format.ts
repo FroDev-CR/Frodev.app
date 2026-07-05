@@ -1,14 +1,16 @@
 export function money(n: number): string {
-  return n.toLocaleString("es-MX", {
+  return n.toLocaleString("es-CR", {
     style: "currency",
-    currency: "MXN",
-    minimumFractionDigits: 2,
+    currency: "CRC",
+    // En colones casi todo es entero: decimales solo cuando hay.
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2,
+    maximumFractionDigits: 2,
   });
 }
 
 export function shortDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("es-MX", {
+  return new Date(y, m - 1, d).toLocaleDateString("es-CR", {
     day: "2-digit",
     month: "short",
   });

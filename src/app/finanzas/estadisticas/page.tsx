@@ -60,15 +60,18 @@ export default function EstadisticasPage() {
   const [y, m] = todayStr.split("-").map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
 
-  // ── Próximos pagos (deudas) ──
+  // ── Próximos pagos (deudas; las "sin prisa" no cuentan) ──
+  const activeDebts = debts.filter((d) => !d.low_priority);
   const [pay1, pay2] = nextPaydays(todayStr);
-  const quincenalTotal = debts
+  const quincenalTotal = activeDebts
     .filter((d) => d.frequency === "quincenal")
     .reduce((s, d) => s + d.amount, 0);
-  const mensualTotal = debts
+  const mensualTotal = activeDebts
     .filter((d) => d.frequency === "mensual")
     .reduce((s, d) => s + d.amount, 0);
-  const unicos = debts.filter((d) => d.frequency === "unico" && d.due_date);
+  const unicos = activeDebts.filter(
+    (d) => d.frequency === "unico" && d.due_date
+  );
   const unicosOverdue = unicos
     .filter((d) => d.due_date! < todayStr)
     .reduce((s, d) => s + d.amount, 0);

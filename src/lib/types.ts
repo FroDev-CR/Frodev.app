@@ -52,6 +52,18 @@ export interface Debt {
   amount: number;
   frequency: DebtFrequency;
   due_date: string | null; // solo para pago único: cuándo hay que pagarlo
+  low_priority: boolean; // "sin prisa": no cuenta en pagos ni alertas
+  created_at: string;
+}
+
+export type ShoppingKind = "necesito" | "quiero";
+
+// Lista de compras estilo cuaderno.
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  kind: ShoppingKind;
+  done: boolean;
   created_at: string;
 }
 

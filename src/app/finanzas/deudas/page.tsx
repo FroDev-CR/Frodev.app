@@ -24,6 +24,7 @@ export default function DeudasPage() {
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<DebtFrequency>("mensual");
   const [dueDate, setDueDate] = useState(today());
+  const [lowPriority, setLowPriority] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,14 +36,21 @@ export default function DeudasPage() {
   }, []);
 
   // Lo que las deudas recurrentes se comen del mes (quincenal paga 2 veces).
-  const monthlyCommitment = debts.reduce((s, d) => {
+  // Las "sin prisa" no cuentan: están ahí para cuando se quieran pagar.
+  const activeDebts = debts.filter((d) => !d.low_priority);
+  const monthlyCommitment = activeDebts.reduce((s, d) => {
     if (d.frequency === "mensual") return s + d.amount;
     if (d.frequency === "quincenal") return s + d.amount * 2;
     return s;
   }, 0);
-  const oneTimeTotal = debts
+  const oneTimeTotal = activeDebts
     .filter((d) => d.frequency === "unico")
     .reduce((s, d) => s + d.amount, 0);
+
+  // Sin prisa al final de la lista.
+  const sortedDebts = [...debts].sort(
+    (a, b) => Number(a.low_priority) - Number(b.low_priority)
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -63,10 +71,12 @@ export default function DeudasPage() {
         amount: value,
         frequency,
         due_date: frequency === "unico" ? dueDate : null,
+        low_priority: lowPriority,
       });
       setDebts((prev) => [row, ...prev]);
       setName("");
       setAmount("");
+      setLowPriority(false);
       setShowForm(false);
     } catch {
       setError("No se pudo guardar. Intenta de nuevo.");
@@ -196,6 +206,21 @@ export default function DeudasPage() {
             </label>
           )}
 
+          <label className="flex items-center gap-3 text-sm font-bold uppercase cursor-pointer">
+            <input
+              type="checkbox"
+              checked={lowPriority}
+              onChange={(e) => setLowPriority(e.target.checked)}
+              className="w-5 h-5 accent-primary"
+            />
+            <span>
+              Sin prisa{" "}
+              <span className="text-muted font-normal normal-case">
+                (no cuenta en pagos ni alertas)
+              </span>
+            </span>
+          </label>
+
           {error && (
             <p role="alert" className="text-expense text-sm font-bold">
               {error}
@@ -221,22 +246,34 @@ export default function DeudasPage() {
           </p>
         )}
         <ul className="flex flex-col gap-3">
-          {debts.map((d) => (
+          {sortedDebts.map((d) => (
             <li
               key={d.id}
-              className="brut-card brut-card--debt p-3 flex justify-between items-center gap-2"
+              className={`brut-card p-3 flex justify-between items-center gap-2 ${
+                d.low_priority ? "opacity-70" : "brut-card--debt"
+              }`}
             >
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">{d.name}</p>
-                <span className="brut-tag bg-debt text-white mt-1">
-                  {DEBT_FREQUENCY_LABELS[d.frequency]}
+                <span
+                  className={`brut-tag mt-1 ${
+                    d.low_priority ? "bg-bg text-muted" : "bg-debt text-white"
+                  }`}
+                >
+                  {d.low_priority
+                    ? "Sin prisa"
+                    : DEBT_FREQUENCY_LABELS[d.frequency]}
                   {d.frequency === "unico" && d.due_date
                     ? ` · ${shortDate(d.due_date)}`
                     : ""}
                 </span>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <p className="font-bold tabular-nums text-debt">
+                <p
+                  className={`font-bold tabular-nums ${
+                    d.low_priority ? "text-muted" : "text-debt"
+                  }`}
+                >
                   {money(d.amount)}
                 </p>
                 <button

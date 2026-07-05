@@ -61,6 +61,19 @@ alter table transactions
 alter table debts
   add column if not exists due_date date;
 
+-- Deuda "sin prisa": se queda guardada pero no cuenta en pagos ni alertas.
+alter table debts
+  add column if not exists low_priority boolean not null default false;
+
+-- Lista de compras (debo comprar / quiero comprar), estilo cuaderno.
+create table if not exists shopping_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  kind text not null check (kind in ('necesito', 'quiero')),
+  done boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_transactions_date on transactions (date desc);
 create index if not exists idx_workouts_date on workouts (date desc);
 
@@ -71,6 +84,7 @@ alter table debts enable row level security;
 alter table categories enable row level security;
 alter table recurring_incomes enable row level security;
 alter table wallet enable row level security;
+alter table shopping_items enable row level security;
 
 drop policy if exists "anon full access transactions" on transactions;
 create policy "anon full access transactions" on transactions
@@ -94,4 +108,8 @@ create policy "anon full access recurring_incomes" on recurring_incomes
 
 drop policy if exists "anon full access wallet" on wallet;
 create policy "anon full access wallet" on wallet
+  for all using (true) with check (true);
+
+drop policy if exists "anon full access shopping_items" on shopping_items;
+create policy "anon full access shopping_items" on shopping_items
   for all using (true) with check (true);

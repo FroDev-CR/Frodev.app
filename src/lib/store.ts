@@ -3,6 +3,8 @@ import type {
   Category,
   Debt,
   RecurringIncome,
+  ShoppingItem,
+  ShoppingKind,
   Transaction,
   TransactionType,
   Workout,
@@ -18,6 +20,7 @@ const LS_DEBT = "frodev.debts";
 const LS_CAT = "frodev.categories";
 const LS_REC = "frodev.recurring_incomes";
 const LS_WALLET = "frodev.wallet";
+const LS_SHOP = "frodev.shopping";
 
 const WALLET_ID = "main";
 
@@ -186,6 +189,81 @@ export async function deleteCategory(id: string): Promise<void> {
   lsWrite(
     LS_CAT,
     lsRead<Category>(LS_CAT).filter((c) => c.id !== id)
+  );
+}
+
+// ── Shopping list (lista de compras) ────────────────────
+
+export async function getShoppingItems(): Promise<ShoppingItem[]> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("shopping_items")
+      .select("*")
+      .order("created_at");
+    if (error) throw error;
+    return data as ShoppingItem[];
+  }
+  return lsRead<ShoppingItem>(LS_SHOP).sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
+}
+
+export async function addShoppingItem(
+  name: string,
+  kind: ShoppingKind
+): Promise<ShoppingItem> {
+  const row: ShoppingItem = {
+    id: uid(),
+    name,
+    kind,
+    done: false,
+    created_at: new Date().toISOString(),
+  };
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("shopping_items")
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as ShoppingItem;
+  }
+  lsWrite(LS_SHOP, [...lsRead<ShoppingItem>(LS_SHOP), row]);
+  return row;
+}
+
+export async function toggleShoppingItem(
+  id: string,
+  done: boolean
+): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ done })
+      .eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  lsWrite(
+    LS_SHOP,
+    lsRead<ShoppingItem>(LS_SHOP).map((i) =>
+      i.id === id ? { ...i, done } : i
+    )
+  );
+}
+
+export async function deleteShoppingItem(id: string): Promise<void> {
+  if (supabase) {
+    const { error } = await supabase
+      .from("shopping_items")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+    return;
+  }
+  lsWrite(
+    LS_SHOP,
+    lsRead<ShoppingItem>(LS_SHOP).filter((i) => i.id !== id)
   );
 }
 
