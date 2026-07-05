@@ -32,16 +32,16 @@ export default function EntradasPage() {
 
   function load() {
     // Materializa las automáticas pendientes antes de leer.
-    return syncRecurringIncomes()
-      .then((created) => {
-        if (created.length > 0) notifyWallet();
-        return Promise.all([getTransactions(), getRecurringIncomes()]);
-      })
-      .then(([t, r]) => {
-        setTxs(t.filter((x) => x.type === "entrada"));
-        setRecs(r);
-        setLoaded(true);
-      });
+    return syncRecurringIncomes().then(async (created) => {
+      if (created.length > 0) notifyWallet();
+      const [t, r] = await Promise.all([
+        getTransactions(),
+        getRecurringIncomes(),
+      ]);
+      setTxs(t.filter((x) => x.type === "entrada"));
+      setRecs(r);
+      setLoaded(true);
+    });
   }
 
   useEffect(() => {
