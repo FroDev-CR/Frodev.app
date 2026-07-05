@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import WalletHud from "@/components/WalletHud";
 
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
@@ -28,7 +29,8 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${spaceMono.variable} h-full antialiased`}>
       <body className="min-h-dvh flex flex-col">
-        <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-6 pb-28">
+        <WalletHud />
+        <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-16 pb-28">
           {children}
         </main>
         <BottomNav />

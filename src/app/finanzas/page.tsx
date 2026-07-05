@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   Plus,
-  Skull,
   Trash2,
   TrendingUp,
   TrendingDown,
@@ -86,14 +85,6 @@ export default function FinanzasPage() {
           </span>
         </Link>
       </div>
-
-      {/* Deudas */}
-      <Link
-        href="/finanzas/deudas"
-        className="brut-btn bg-debt text-white px-4 flex items-center justify-center gap-2"
-      >
-        <Skull size={20} aria-hidden /> Deudas
-      </Link>
 
       {/* Formulario rápido */}
       {showForm && (

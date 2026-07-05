@@ -8,7 +8,26 @@ export interface Transaction {
   note: string;
   date: string; // ISO yyyy-mm-dd
   created_at: string;
+  recurring_id?: string | null; // si vino de una entrada automática
 }
+
+export type IncomeFrequency = "quincenal" | "mensual";
+
+// Entrada automática (ej: salario): se materializa sola en transacciones.
+export interface RecurringIncome {
+  id: string;
+  name: string; // categoría/etiqueta, ej: "Salario"
+  amount: number;
+  frequency: IncomeFrequency;
+  day1: number; // día del mes (1-31), se ajusta al último día si el mes es corto
+  day2: number | null; // segundo día, solo para quincenal
+  created_at: string;
+}
+
+export const INCOME_FREQUENCY_LABELS: Record<IncomeFrequency, string> = {
+  quincenal: "Quincenal",
+  mensual: "Mensual",
+};
 
 export interface Exercise {
   name: string;

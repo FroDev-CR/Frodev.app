@@ -36,6 +36,27 @@ create table if not exists categories (
   unique (name, type)
 );
 
+-- Entradas automáticas (ej: salario quincenal). Se materializan en transactions.
+create table if not exists recurring_incomes (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  amount numeric(12, 2) not null check (amount > 0),
+  frequency text not null check (frequency in ('quincenal', 'mensual')),
+  day1 int not null check (day1 between 1 and 31),
+  day2 int check (day2 between 1 and 31),
+  created_at timestamptz not null default now()
+);
+
+-- Billetera: saldo actual, una sola fila.
+create table if not exists wallet (
+  id text primary key default 'main',
+  balance numeric(12, 2) not null default 0
+);
+
+-- Vincula una transacción con la regla automática que la generó (si aplica).
+alter table transactions
+  add column if not exists recurring_id uuid references recurring_incomes(id) on delete set null;
+
 create index if not exists idx_transactions_date on transactions (date desc);
 create index if not exists idx_workouts_date on workouts (date desc);
 
@@ -44,6 +65,8 @@ alter table transactions enable row level security;
 alter table workouts enable row level security;
 alter table debts enable row level security;
 alter table categories enable row level security;
+alter table recurring_incomes enable row level security;
+alter table wallet enable row level security;
 
 drop policy if exists "anon full access transactions" on transactions;
 create policy "anon full access transactions" on transactions
@@ -59,4 +82,12 @@ create policy "anon full access debts" on debts
 
 drop policy if exists "anon full access categories" on categories;
 create policy "anon full access categories" on categories
+  for all using (true) with check (true);
+
+drop policy if exists "anon full access recurring_incomes" on recurring_incomes;
+create policy "anon full access recurring_incomes" on recurring_incomes
+  for all using (true) with check (true);
+
+drop policy if exists "anon full access wallet" on wallet;
+create policy "anon full access wallet" on wallet
   for all using (true) with check (true);
