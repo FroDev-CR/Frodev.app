@@ -2,32 +2,22 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  TrendingUp,
-  TrendingDown,
-  Dumbbell,
-  ArrowRight,
-  Skull,
-} from "lucide-react";
-import { getTransactions, getWorkouts, getDebts } from "@/lib/store";
-import { money, shortDate, today } from "@/lib/format";
-import type { Debt, Transaction, Workout } from "@/lib/types";
+import { TrendingUp, TrendingDown, Dumbbell, ArrowRight } from "lucide-react";
+import { getTransactions, getWorkouts } from "@/lib/store";
+import { money, shortDate } from "@/lib/format";
+import type { Transaction, Workout } from "@/lib/types";
 
 export default function Home() {
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [debts, setDebts] = useState<Debt[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    Promise.all([getTransactions(), getWorkouts(), getDebts()]).then(
-      ([t, w, d]) => {
-        setTxs(t);
-        setWorkouts(w);
-        setDebts(d);
-        setLoaded(true);
-      }
-    );
+    Promise.all([getTransactions(), getWorkouts()]).then(([t, w]) => {
+      setTxs(t);
+      setWorkouts(w);
+      setLoaded(true);
+    });
   }, []);
 
   const month = new Date().toISOString().slice(0, 7);
@@ -42,13 +32,6 @@ export default function Home() {
 
   const monthWorkouts = workouts.filter((w) => w.date.startsWith(month));
   const lastWorkout = workouts[0];
-
-  // Pagos únicos ordenados por cercanía (las recurrentes no tienen día fijo).
-  const todayStr = today();
-  const upcomingDebts = debts
-    .filter((d) => d.frequency === "unico" && d.due_date)
-    .sort((a, b) => a.due_date!.localeCompare(b.due_date!))
-    .slice(0, 3);
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,47 +69,6 @@ export default function Home() {
           Ir a finanzas <ArrowRight size={18} aria-hidden />
         </Link>
       </section>
-
-      {/* Deudas cercanas */}
-      {upcomingDebts.length > 0 && (
-        <section className="brut-card brut-card--debt p-5">
-          <span className="brut-tag bg-debt text-white flex items-center gap-1 w-fit">
-            <Skull size={13} aria-hidden /> Deudas cercanas
-          </span>
-          <ul className="mt-3 flex flex-col gap-2">
-            {upcomingDebts.map((d) => {
-              const overdue = d.due_date! < todayStr;
-              return (
-                <li
-                  key={d.id}
-                  className="flex justify-between items-center gap-2 text-sm border-b border-white/10 pb-2"
-                >
-                  <div className="min-w-0">
-                    <p className="font-bold truncate">{d.name}</p>
-                    <p
-                      className={`text-xs ${
-                        overdue ? "text-debt font-bold" : "text-muted"
-                      }`}
-                    >
-                      {overdue ? "¡Vencida! " : ""}
-                      {shortDate(d.due_date!)}
-                    </p>
-                  </div>
-                  <span className="font-bold tabular-nums text-debt shrink-0">
-                    {money(d.amount)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <Link
-            href="/finanzas/deudas"
-            className="brut-btn bg-debt text-white flex items-center justify-center gap-2 mt-4 px-4"
-          >
-            <Skull size={18} aria-hidden /> Ver deudas
-          </Link>
-        </section>
-      )}
 
       {/* Gym del mes */}
       <section className="brut-card brut-card--gym p-5 rot-r">

@@ -4,24 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  BarChart3,
   Plus,
+  Skull,
   Trash2,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
-import { getTransactions, deleteTransaction } from "@/lib/store";
-import { money, shortDate } from "@/lib/format";
-import type { Transaction } from "@/lib/types";
+import { getTransactions, getDebts, deleteTransaction } from "@/lib/store";
+import { money, shortDate, today } from "@/lib/format";
+import type { Debt, Transaction } from "@/lib/types";
 import TxForm from "@/components/TxForm";
 
 export default function FinanzasPage() {
   const [txs, setTxs] = useState<Transaction[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    getTransactions().then((t) => {
+    Promise.all([getTransactions(), getDebts()]).then(([t, d]) => {
       setTxs(t);
+      setDebts(d);
       setLoaded(true);
     });
   }, []);
@@ -34,6 +38,13 @@ export default function FinanzasPage() {
   const expense = monthTxs
     .filter((t) => t.type === "gasto")
     .reduce((s, t) => s + t.amount, 0);
+
+  // Pagos únicos ordenados por cercanía (las recurrentes no tienen día fijo).
+  const todayStr = today();
+  const upcomingDebts = debts
+    .filter((d) => d.frequency === "unico" && d.due_date)
+    .sort((a, b) => a.due_date!.localeCompare(b.due_date!))
+    .slice(0, 3);
 
   async function handleDelete(id: string) {
     if (!confirm("¿Borrar este movimiento?")) return;
@@ -85,6 +96,55 @@ export default function FinanzasPage() {
           </span>
         </Link>
       </div>
+
+      {/* Estadísticas */}
+      <Link
+        href="/finanzas/estadisticas"
+        className="brut-btn bg-primary text-white px-4 flex items-center justify-center gap-2"
+      >
+        <BarChart3 size={20} aria-hidden /> Estadísticas
+      </Link>
+
+      {/* Deudas cercanas */}
+      {upcomingDebts.length > 0 && (
+        <section className="brut-card brut-card--debt p-5">
+          <span className="brut-tag bg-debt text-white flex items-center gap-1 w-fit">
+            <Skull size={13} aria-hidden /> Deudas cercanas
+          </span>
+          <ul className="mt-3 flex flex-col gap-2">
+            {upcomingDebts.map((d) => {
+              const overdue = d.due_date! < todayStr;
+              return (
+                <li
+                  key={d.id}
+                  className="flex justify-between items-center gap-2 text-sm border-b border-white/10 pb-2"
+                >
+                  <div className="min-w-0">
+                    <p className="font-bold truncate">{d.name}</p>
+                    <p
+                      className={`text-xs ${
+                        overdue ? "text-debt font-bold" : "text-muted"
+                      }`}
+                    >
+                      {overdue ? "¡Vencida! " : ""}
+                      {shortDate(d.due_date!)}
+                    </p>
+                  </div>
+                  <span className="font-bold tabular-nums text-debt shrink-0">
+                    {money(d.amount)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <Link
+            href="/finanzas/deudas"
+            className="brut-btn bg-debt text-white flex items-center justify-center gap-2 mt-4 px-4"
+          >
+            <Skull size={18} aria-hidden /> Ver deudas
+          </Link>
+        </section>
+      )}
 
       {/* Formulario rápido */}
       {showForm && (
