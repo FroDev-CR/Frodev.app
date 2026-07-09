@@ -39,9 +39,36 @@ export interface Exercise {
 export interface Workout {
   id: string;
   date: string; // ISO yyyy-mm-dd
-  focus: string; // ej: "Pecho", "Pierna", "Full body"
+  focus: string; // etiqueta legible, ej: "Pecho + Bíceps" o "Descanso"
+  muscles?: string[] | null; // ids de MUSCLE_GROUPS trabajados
   exercises: Exercise[];
   created_at: string;
+}
+
+// Día marcado como descanso: workout sin ejercicios con este focus.
+export const REST_FOCUS = "Descanso";
+
+// Grupos musculares seleccionables en el muñequito.
+export const MUSCLE_GROUPS = [
+  { id: "pecho", label: "Pecho" },
+  { id: "hombro", label: "Hombro" },
+  { id: "biceps", label: "Bíceps" },
+  { id: "triceps", label: "Tríceps" },
+  { id: "antebrazo", label: "Antebrazo" },
+  { id: "abdomen", label: "Abdomen" },
+  { id: "trapecio", label: "Trapecio" },
+  { id: "espalda", label: "Espalda" },
+  { id: "gluteo", label: "Glúteo" },
+  { id: "cuadriceps", label: "Cuádriceps" },
+  { id: "femoral", label: "Femoral" },
+  { id: "pantorrilla", label: "Pantorrilla" },
+  { id: "cardio", label: "Cardio" },
+] as const;
+
+export type MuscleId = (typeof MUSCLE_GROUPS)[number]["id"];
+
+export function muscleLabel(id: string): string {
+  return MUSCLE_GROUPS.find((m) => m.id === id)?.label ?? id;
 }
 
 export type DebtFrequency = "quincenal" | "mensual" | "unico";

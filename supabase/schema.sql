@@ -65,6 +65,10 @@ alter table debts
 alter table debts
   add column if not exists low_priority boolean not null default false;
 
+-- Músculos trabajados en cada entrenamiento (ids del muñequito).
+alter table workouts
+  add column if not exists muscles jsonb not null default '[]';
+
 -- Lista de compras (debo comprar / quiero comprar), estilo cuaderno.
 create table if not exists shopping_items (
   id uuid primary key default gen_random_uuid(),

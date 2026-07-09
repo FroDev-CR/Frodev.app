@@ -16,6 +16,15 @@ export function shortDate(iso: string): string {
   });
 }
 
+export function longDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("es-CR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export function today(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
