@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { persist } from "./offline";
 import type {
   Category,
   Debt,
@@ -11,8 +12,10 @@ import type {
 } from "./types";
 import { today } from "./format";
 
-// Capa de datos: Supabase si hay env vars, localStorage si no.
-// Misma API async en ambos casos — el swap es transparente para la UI.
+// Capa de datos offline-first: localStorage es el espejo local siempre.
+// Con Supabase configurado, las lecturas refrescan el espejo y las
+// escrituras se aplican local primero y se sincronizan por detrás
+// (si no hay internet quedan en cola — ver offline.ts).
 
 const LS_TX = "frodev.transactions";
 const LS_WO = "frodev.workouts";
@@ -34,6 +37,7 @@ function lsRead<T>(key: string): T[] {
 }
 
 function lsWrite<T>(key: string, rows: T[]) {
+  if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(rows));
 }
 
@@ -41,170 +45,136 @@ function uid() {
   return crypto.randomUUID();
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
+// Lee de Supabase y refresca el espejo local; si falla (sin internet),
+// devuelve lo que haya en el espejo.
+async function fetchList<T>(
+  lsKey: string,
+  remote: () => PromiseLike<{ data: unknown; error: unknown }>,
+  localSort: (rows: T[]) => T[]
+): Promise<T[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await remote();
+      if (error) throw error;
+      lsWrite(lsKey, data as T[]);
+      return data as T[];
+    } catch {
+      // sin conexión: usar el espejo local
+    }
+  }
+  return localSort(lsRead<T>(lsKey));
+}
+
 // ── Transactions ────────────────────────────────────────
 
 export async function getTransactions(): Promise<Transaction[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("*")
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data as Transaction[];
-  }
-  return lsRead<Transaction>(LS_TX).sort((a, b) =>
-    b.date.localeCompare(a.date)
+  return fetchList<Transaction>(
+    LS_TX,
+    () =>
+      supabase!
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false }),
+    (rows) =>
+      rows.sort(
+        (a, b) =>
+          b.date.localeCompare(a.date) ||
+          b.created_at.localeCompare(a.created_at)
+      )
   );
 }
 
 export async function addTransaction(
   tx: Omit<Transaction, "id" | "created_at">
 ): Promise<Transaction> {
-  const row: Transaction = {
-    ...tx,
-    id: uid(),
-    created_at: new Date().toISOString(),
-  };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("transactions")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Transaction;
-  }
+  const row: Transaction = { ...tx, id: uid(), created_at: nowIso() };
   lsWrite(LS_TX, [row, ...lsRead<Transaction>(LS_TX)]);
+  await persist({ kind: "insert", table: "transactions", row });
   return row;
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_TX,
     lsRead<Transaction>(LS_TX).filter((t) => t.id !== id)
   );
+  await persist({ kind: "delete", table: "transactions", id });
 }
 
 // ── Debts ───────────────────────────────────────────────
 
 export async function getDebts(): Promise<Debt[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("debts")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data as Debt[];
-  }
-  return lsRead<Debt>(LS_DEBT).sort((a, b) =>
-    b.created_at.localeCompare(a.created_at)
+  return fetchList<Debt>(
+    LS_DEBT,
+    () =>
+      supabase!
+        .from("debts")
+        .select("*")
+        .order("created_at", { ascending: false }),
+    (rows) => rows.sort((a, b) => b.created_at.localeCompare(a.created_at))
   );
 }
 
 export async function addDebt(
   debt: Omit<Debt, "id" | "created_at">
 ): Promise<Debt> {
-  const row: Debt = {
-    ...debt,
-    id: uid(),
-    created_at: new Date().toISOString(),
-  };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("debts")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Debt;
-  }
+  const row: Debt = { ...debt, id: uid(), created_at: nowIso() };
   lsWrite(LS_DEBT, [row, ...lsRead<Debt>(LS_DEBT)]);
+  await persist({ kind: "insert", table: "debts", row });
   return row;
 }
 
 export async function deleteDebt(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase.from("debts").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_DEBT,
     lsRead<Debt>(LS_DEBT).filter((d) => d.id !== id)
   );
+  await persist({ kind: "delete", table: "debts", id });
 }
 
 // ── Categories ──────────────────────────────────────────
 
-export async function getCategories(type: TransactionType): Promise<Category[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("type", type)
-      .order("name");
-    if (error) throw error;
-    return data as Category[];
-  }
-  return lsRead<Category>(LS_CAT)
-    .filter((c) => c.type === type)
-    .sort((a, b) => a.name.localeCompare(b.name));
+export async function getCategories(
+  type: TransactionType
+): Promise<Category[]> {
+  const all = await fetchList<Category>(
+    LS_CAT,
+    () => supabase!.from("categories").select("*").order("name"),
+    (rows) => rows.sort((a, b) => a.name.localeCompare(b.name))
+  );
+  return all.filter((c) => c.type === type);
 }
 
 export async function addCategory(
   name: string,
   type: TransactionType
 ): Promise<Category> {
-  const row: Category = {
-    id: uid(),
-    name,
-    type,
-    created_at: new Date().toISOString(),
-  };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("categories")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Category;
-  }
+  const row: Category = { id: uid(), name, type, created_at: nowIso() };
   lsWrite(LS_CAT, [row, ...lsRead<Category>(LS_CAT)]);
+  await persist({ kind: "insert", table: "categories", row });
   return row;
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_CAT,
     lsRead<Category>(LS_CAT).filter((c) => c.id !== id)
   );
+  await persist({ kind: "delete", table: "categories", id });
 }
 
 // ── Shopping list (lista de compras) ────────────────────
 
 export async function getShoppingItems(): Promise<ShoppingItem[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("shopping_items")
-      .select("*")
-      .order("created_at");
-    if (error) throw error;
-    return data as ShoppingItem[];
-  }
-  return lsRead<ShoppingItem>(LS_SHOP).sort((a, b) =>
-    a.created_at.localeCompare(b.created_at)
+  return fetchList<ShoppingItem>(
+    LS_SHOP,
+    () => supabase!.from("shopping_items").select("*").order("created_at"),
+    (rows) => rows.sort((a, b) => a.created_at.localeCompare(b.created_at))
   );
 }
 
@@ -217,18 +187,10 @@ export async function addShoppingItem(
     name,
     kind,
     done: false,
-    created_at: new Date().toISOString(),
+    created_at: nowIso(),
   };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("shopping_items")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as ShoppingItem;
-  }
   lsWrite(LS_SHOP, [...lsRead<ShoppingItem>(LS_SHOP), row]);
+  await persist({ kind: "insert", table: "shopping_items", row });
   return row;
 }
 
@@ -236,63 +198,57 @@ export async function toggleShoppingItem(
   id: string,
   done: boolean
 ): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from("shopping_items")
-      .update({ done })
-      .eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_SHOP,
-    lsRead<ShoppingItem>(LS_SHOP).map((i) =>
-      i.id === id ? { ...i, done } : i
-    )
+    lsRead<ShoppingItem>(LS_SHOP).map((i) => (i.id === id ? { ...i, done } : i))
   );
+  await persist({ kind: "update", table: "shopping_items", id, patch: { done } });
 }
 
 export async function deleteShoppingItem(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from("shopping_items")
-      .delete()
-      .eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_SHOP,
     lsRead<ShoppingItem>(LS_SHOP).filter((i) => i.id !== id)
   );
+  await persist({ kind: "delete", table: "shopping_items", id });
 }
 
 // ── Wallet (billetera) ──────────────────────────────────
 
-export async function getWallet(): Promise<number> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("wallet")
-      .select("balance")
-      .eq("id", WALLET_ID)
-      .maybeSingle();
-    if (error) throw error;
-    return data ? Number(data.balance) : 0;
-  }
+function lsWalletRead(): number {
   if (typeof window === "undefined") return 0;
   return Number(localStorage.getItem(LS_WALLET) ?? "0");
 }
 
+export async function getWallet(): Promise<number> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("wallet")
+        .select("balance")
+        .eq("id", WALLET_ID)
+        .maybeSingle();
+      if (error) throw error;
+      const value = data ? Number(data.balance) : 0;
+      if (typeof window !== "undefined")
+        localStorage.setItem(LS_WALLET, String(value));
+      return value;
+    } catch {
+      // sin conexión: usar el espejo local
+    }
+  }
+  return lsWalletRead();
+}
+
 export async function setWallet(balance: number): Promise<number> {
   const value = Math.round(balance * 100) / 100;
-  if (supabase) {
-    const { error } = await supabase
-      .from("wallet")
-      .upsert({ id: WALLET_ID, balance: value });
-    if (error) throw error;
-    return value;
-  }
-  localStorage.setItem(LS_WALLET, String(value));
+  if (typeof window !== "undefined")
+    localStorage.setItem(LS_WALLET, String(value));
+  await persist({
+    kind: "upsert",
+    table: "wallet",
+    row: { id: WALLET_ID, balance: value },
+  });
   return value;
 }
 
@@ -304,37 +260,23 @@ export async function adjustWallet(delta: number): Promise<number> {
 // ── Recurring incomes (entradas automáticas) ────────────
 
 export async function getRecurringIncomes(): Promise<RecurringIncome[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("recurring_incomes")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data as RecurringIncome[];
-  }
-  return lsRead<RecurringIncome>(LS_REC).sort((a, b) =>
-    b.created_at.localeCompare(a.created_at)
+  return fetchList<RecurringIncome>(
+    LS_REC,
+    () =>
+      supabase!
+        .from("recurring_incomes")
+        .select("*")
+        .order("created_at", { ascending: false }),
+    (rows) => rows.sort((a, b) => b.created_at.localeCompare(a.created_at))
   );
 }
 
 export async function addRecurringIncome(
   rec: Omit<RecurringIncome, "id" | "created_at">
 ): Promise<RecurringIncome> {
-  const row: RecurringIncome = {
-    ...rec,
-    id: uid(),
-    created_at: new Date().toISOString(),
-  };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("recurring_incomes")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as RecurringIncome;
-  }
+  const row: RecurringIncome = { ...rec, id: uid(), created_at: nowIso() };
   lsWrite(LS_REC, [row, ...lsRead<RecurringIncome>(LS_REC)]);
+  await persist({ kind: "insert", table: "recurring_incomes", row });
   return row;
 }
 
@@ -342,35 +284,20 @@ export async function updateRecurringIncome(
   id: string,
   patch: Partial<Omit<RecurringIncome, "id" | "created_at">>
 ): Promise<RecurringIncome> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("recurring_incomes")
-      .update(patch)
-      .eq("id", id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as RecurringIncome;
-  }
-  const rows = lsRead<RecurringIncome>(LS_REC);
-  const next = rows.map((r) => (r.id === id ? { ...r, ...patch } : r));
+  const next = lsRead<RecurringIncome>(LS_REC).map((r) =>
+    r.id === id ? { ...r, ...patch } : r
+  );
   lsWrite(LS_REC, next);
+  await persist({ kind: "update", table: "recurring_incomes", id, patch });
   return next.find((r) => r.id === id)!;
 }
 
 export async function deleteRecurringIncome(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase
-      .from("recurring_incomes")
-      .delete()
-      .eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_REC,
     lsRead<RecurringIncome>(LS_REC).filter((r) => r.id !== id)
   );
+  await persist({ kind: "delete", table: "recurring_incomes", id });
 }
 
 // Clampa un día al último día válido del mes (ej: día 31 en febrero → 28/29).
@@ -461,46 +388,27 @@ async function doSyncRecurringIncomes(): Promise<Transaction[]> {
 // ── Workouts ────────────────────────────────────────────
 
 export async function getWorkouts(): Promise<Workout[]> {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("workouts")
-      .select("*")
-      .order("date", { ascending: false });
-    if (error) throw error;
-    return data as Workout[];
-  }
-  return lsRead<Workout>(LS_WO).sort((a, b) => b.date.localeCompare(a.date));
+  return fetchList<Workout>(
+    LS_WO,
+    () =>
+      supabase!.from("workouts").select("*").order("date", { ascending: false }),
+    (rows) => rows.sort((a, b) => b.date.localeCompare(a.date))
+  );
 }
 
 export async function addWorkout(
   wo: Omit<Workout, "id" | "created_at">
 ): Promise<Workout> {
-  const row: Workout = {
-    ...wo,
-    id: uid(),
-    created_at: new Date().toISOString(),
-  };
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("workouts")
-      .insert(row)
-      .select()
-      .single();
-    if (error) throw error;
-    return data as Workout;
-  }
+  const row: Workout = { ...wo, id: uid(), created_at: nowIso() };
   lsWrite(LS_WO, [row, ...lsRead<Workout>(LS_WO)]);
+  await persist({ kind: "insert", table: "workouts", row });
   return row;
 }
 
 export async function deleteWorkout(id: string): Promise<void> {
-  if (supabase) {
-    const { error } = await supabase.from("workouts").delete().eq("id", id);
-    if (error) throw error;
-    return;
-  }
   lsWrite(
     LS_WO,
     lsRead<Workout>(LS_WO).filter((w) => w.id !== id)
   );
+  await persist({ kind: "delete", table: "workouts", id });
 }

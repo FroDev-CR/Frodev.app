@@ -3,6 +3,7 @@ import { Space_Mono, Caveat } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import WalletHud from "@/components/WalletHud";
+import SyncManager from "@/components/SyncManager";
 
 const spaceMono = Space_Mono({
   variable: "--font-space-mono",
@@ -49,6 +50,7 @@ export default function RootLayout({
       className={`${spaceMono.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-dvh flex flex-col">
+        <SyncManager />
         <WalletHud />
         <main className="flex-1 w-full max-w-lg mx-auto px-4 pt-16 pb-28">
           {children}
