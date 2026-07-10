@@ -71,6 +71,15 @@ export function muscleLabel(id: string): string {
   return MUSCLE_GROUPS.find((m) => m.id === id)?.label ?? id;
 }
 
+// Ejercicio del catálogo: se crea por músculo desde la tuerquita del gym
+// y se elige al registrar un entrenamiento.
+export interface ExerciseDef {
+  id: string;
+  muscle: string; // MuscleId
+  name: string;
+  created_at: string;
+}
+
 export type DebtFrequency = "quincenal" | "mensual" | "unico";
 
 export interface Debt {

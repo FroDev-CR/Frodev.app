@@ -3,6 +3,7 @@ import { persist } from "./offline";
 import type {
   Category,
   Debt,
+  ExerciseDef,
   RecurringIncome,
   ShoppingItem,
   ShoppingKind,
@@ -24,6 +25,7 @@ const LS_CAT = "frodev.categories";
 const LS_REC = "frodev.recurring_incomes";
 const LS_WALLET = "frodev.wallet";
 const LS_SHOP = "frodev.shopping";
+const LS_EXDEF = "frodev.exercise_defs";
 
 const WALLET_ID = "main";
 
@@ -411,4 +413,37 @@ export async function deleteWorkout(id: string): Promise<void> {
     lsRead<Workout>(LS_WO).filter((w) => w.id !== id)
   );
   await persist({ kind: "delete", table: "workouts", id });
+}
+
+// ── Exercise defs (catálogo de ejercicios por músculo) ──
+
+export async function getExerciseDefs(): Promise<ExerciseDef[]> {
+  return fetchList<ExerciseDef>(
+    LS_EXDEF,
+    () => supabase!.from("exercise_defs").select("*").order("name"),
+    (rows) => rows.sort((a, b) => a.name.localeCompare(b.name))
+  );
+}
+
+export async function addExerciseDef(
+  muscle: string,
+  name: string
+): Promise<ExerciseDef> {
+  const row: ExerciseDef = { id: uid(), muscle, name, created_at: nowIso() };
+  lsWrite(
+    LS_EXDEF,
+    [...lsRead<ExerciseDef>(LS_EXDEF), row].sort((a, b) =>
+      a.name.localeCompare(b.name)
+    )
+  );
+  await persist({ kind: "insert", table: "exercise_defs", row });
+  return row;
+}
+
+export async function deleteExerciseDef(id: string): Promise<void> {
+  lsWrite(
+    LS_EXDEF,
+    lsRead<ExerciseDef>(LS_EXDEF).filter((d) => d.id !== id)
+  );
+  await persist({ kind: "delete", table: "exercise_defs", id });
 }

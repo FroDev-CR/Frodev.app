@@ -78,6 +78,15 @@ create table if not exists shopping_items (
   created_at timestamptz not null default now()
 );
 
+-- Catálogo de ejercicios por músculo (configurable desde la tuerquita del gym).
+create table if not exists exercise_defs (
+  id uuid primary key default gen_random_uuid(),
+  muscle text not null,
+  name text not null,
+  created_at timestamptz not null default now(),
+  unique (muscle, name)
+);
+
 create index if not exists idx_transactions_date on transactions (date desc);
 create index if not exists idx_workouts_date on workouts (date desc);
 
@@ -89,6 +98,7 @@ alter table categories enable row level security;
 alter table recurring_incomes enable row level security;
 alter table wallet enable row level security;
 alter table shopping_items enable row level security;
+alter table exercise_defs enable row level security;
 
 drop policy if exists "anon full access transactions" on transactions;
 create policy "anon full access transactions" on transactions
@@ -116,4 +126,8 @@ create policy "anon full access wallet" on wallet
 
 drop policy if exists "anon full access shopping_items" on shopping_items;
 create policy "anon full access shopping_items" on shopping_items
+  for all using (true) with check (true);
+
+drop policy if exists "anon full access exercise_defs" on exercise_defs;
+create policy "anon full access exercise_defs" on exercise_defs
   for all using (true) with check (true);
