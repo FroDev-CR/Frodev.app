@@ -13,6 +13,7 @@ import {
 } from "@/lib/types";
 import GymCalendar from "@/components/GymCalendar";
 import BodyMap from "@/components/BodyMap";
+import MuscleStats from "@/components/MuscleStats";
 
 const emptyExercise: Exercise = { name: "", sets: 3, reps: 10, weight: 0 };
 
@@ -225,6 +226,11 @@ export default function GymPage() {
           </p>
         )}
       </section>
+
+      {/* Distribución de músculos del mes del día seleccionado */}
+      {!showForm && (
+        <MuscleStats workouts={workouts} month={selectedDate.slice(0, 7)} />
+      )}
 
       {/* Formulario en 2 pasos */}
       {showForm && (
