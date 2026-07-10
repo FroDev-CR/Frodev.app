@@ -20,6 +20,16 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "FRODEV.APP",
   description: "Gestor personal — finanzas y gym",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
+  // iOS no usa el manifest para "Añadir a pantalla de inicio".
+  appleWebApp: {
+    capable: true,
+    title: "Frodev",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
