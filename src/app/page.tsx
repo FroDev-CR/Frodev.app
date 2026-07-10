@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, Dumbbell, ArrowRight } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
 import { getTransactions, getWorkouts } from "@/lib/store";
 import { money, shortDate } from "@/lib/format";
 import type { Transaction, Workout } from "@/lib/types";
+import GymWeekSummary from "@/components/GymWeekSummary";
 
 export default function Home() {
   const [txs, setTxs] = useState<Transaction[]>([]);
@@ -30,9 +31,6 @@ export default function Home() {
     .reduce((s, t) => s + t.amount, 0);
   const balance = income - expense;
 
-  const monthWorkouts = workouts.filter((w) => w.date.startsWith(month));
-  const lastWorkout = workouts[0];
-
   return (
     <div className="flex flex-col gap-6">
       <header className="rot-l">
@@ -41,6 +39,9 @@ export default function Home() {
         </h1>
         <p className="text-muted text-sm mt-1">Tu vida, bajo control.</p>
       </header>
+
+      {/* Resumen gimnástico de la semana */}
+      {loaded && <GymWeekSummary workouts={workouts} />}
 
       {/* Balance del mes */}
       <section className="brut-card p-5">
@@ -67,30 +68,6 @@ export default function Home() {
           className="brut-btn bg-primary text-white flex items-center justify-center gap-2 mt-5 px-4"
         >
           Ir a finanzas <ArrowRight size={18} aria-hidden />
-        </Link>
-      </section>
-
-      {/* Gym del mes */}
-      <section className="brut-card brut-card--gym p-5 rot-r">
-        <span className="brut-tag bg-gym text-black">Gym</span>
-        <p className="text-4xl font-bold mt-3">
-          {monthWorkouts.length}
-          <span className="text-base text-muted font-normal">
-            {" "}
-            días este mes
-          </span>
-        </p>
-        {lastWorkout && (
-          <p className="text-sm text-muted mt-2">
-            Último: {shortDate(lastWorkout.date)} — {lastWorkout.focus} (
-            {lastWorkout.exercises.length} ejercicios)
-          </p>
-        )}
-        <Link
-          href="/gym"
-          className="brut-btn bg-gym text-black flex items-center justify-center gap-2 mt-5 px-4"
-        >
-          <Dumbbell size={18} aria-hidden /> Ir al gym
         </Link>
       </section>
 
